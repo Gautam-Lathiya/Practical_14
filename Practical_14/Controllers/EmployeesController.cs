@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Web;
 using System.Web.Mvc;
+using PagedList;
 using Practical_14;
 
 namespace Practical_14.Controllers
@@ -15,19 +16,32 @@ namespace Practical_14.Controllers
         private EmployeeConnection db = new EmployeeConnection();
 
         // GET: Employees
-        public ActionResult Index()
+        public ActionResult Index(string term, int? page)
         {
-            return View(db.Employees.ToList());
+            ViewData["searchTerm"] = term;
+            var employees = db.Employees
+                              .Where(e => string.IsNullOrEmpty(term) || e.Name.ToLower().Contains(term.ToLower()))
+                              .OrderBy(e => e.Id); // Sort for consistency
+
+            int pageSize = 10;
+            int pageNumber = page ?? 1;
+
+            return View(employees.ToPagedList(pageNumber, pageSize));
         }
 
-        public ActionResult Search(string term)
-        {
-            var results = db.Employees
-                    .Where(e => string.IsNullOrEmpty(term) ||
-                                e.Name.ToLower().Contains(term.ToLower()))
-                    .ToList();
 
-            return PartialView("_EmployeeList", results);
+        public ActionResult Search(string term, int? page)
+        {
+            // Search and filter (case-insensitive)
+            var results = db.Employees
+                            .Where(e => string.IsNullOrEmpty(term) || e.Name.ToLower().Contains(term.ToLower()))
+                            .OrderBy(e => e.Id); // Sort for consistency
+
+            // Paging logic
+            int pageSize = 10;
+            int pageNumber = page ?? 1;
+
+            return PartialView("_EmployeeList", results.ToPagedList(pageNumber, pageSize));
         }
 
         // GET: Employees/Details/5
